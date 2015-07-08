@@ -7,5 +7,6 @@ function setup() {
 function draw() {
   // draw stuff here
   ellipse(width/2, height/2, 100, 50);
-  ellipse(width/2, height/2, 100, random(50));
+  ellipse(width/2, height/3, 100, 50);
+  ellipse(width/2, height/2, 100, random(100));
 }
