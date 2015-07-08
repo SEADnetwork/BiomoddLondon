@@ -1,13 +1,23 @@
-function setup() {
-  // uncomment this line to make the canvas the full size of the window
-  // var myCanvas = createCanvas(600, 400);
-  // myCanvas.parent('myContainer');
-  console.log("initial load subtiv sketch");
-}
+var s = function( p ) {
 
-function draw() {
-  // draw stuff here
-  background(255, 204, 0);
-  fill('red');
-  ellipse(width/2, height/2, 100, 50);
-}
+  var x = 100; 
+  var y = 100;
+
+  p.setup = function() {
+    p.createCanvas(700, 410);
+    console.log(whaddup);
+  };
+
+  p.draw = function() {
+    p.background(0);
+    p.fill(115);
+    p.rect(x,y,50,p.random(5));
+  };
+
+  p.mousePressed = function(){
+  	p.remove();
+  }
+
+};
+
+var myp5 = new p5(s, 'myContainer');
