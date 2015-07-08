@@ -1,15 +1,31 @@
-function setup() {
-  // uncomment this line to make the canvas the full size of the window
-  // var myCanvas = createCanvas(600, 400);
-  // myCanvas.parent('myContainer');
-  console.log("initial load super sketch");
+
+console.log("sketch2 loaded");
+
+s = function( p ) {
+
+  var x = 100; 
+  var y = 100;
+
+
+  p.setup = function() {
+    canvas = null;
+    myCanvas = p.createCanvas(700,410);
+    myCanvas.parent('myContainer');
+  };
+
+  p.draw = function() {
+    p.background('pink');
+    p.fill(255);
+    p.rect(p.mouseX,y,50,p.random(50));
+  };
+
+};
+
+if(myp5){
+  myp5.remove();
+  myp5.canvas.remove();  
 }
 
-function draw() {
-	background(255, 115, 0);
-  // draw stuff here
-  ellipse(width/2, height/2, 100, 50);
-  ellipse(width/2, height/3, 100, 50);
-  ellipse(width/2, height/2, 100, random(100));
-}
 
+
+myp5 = new p5(s);
