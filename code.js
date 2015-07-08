@@ -5,8 +5,10 @@ function setup() {
 }
 
 function draw() {
+	background(255, 115, 0);
   // draw stuff here
   ellipse(width/2, height/2, 100, 50);
   ellipse(width/2, height/3, 100, 50);
   ellipse(width/2, height/2, 100, random(100));
 }
+
