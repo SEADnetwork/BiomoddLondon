@@ -5,7 +5,7 @@ var s = function( p ) {
 
   p.setup = function() {
     p.createCanvas(700, 410);
-    console.log(whaddup);
+    console.log("whaddup");
   };
 
   p.draw = function() {
