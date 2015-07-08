@@ -9,7 +9,7 @@ s = function( p ) {
 
   p.setup = function() {
     canvas = null;
-    myCanvas = p.createCanvas(700,410);
+    myCanvas = p.createCanvas(p.windowWidth, p.windowHeight);
     myCanvas.parent('myContainer');
   };
 
