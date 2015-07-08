@@ -20,4 +20,4 @@ var s = function( p ) {
 
 };
 
-var myp5 = new p5(s, 'myContainer');
+myp5 = new p5(s, 'myContainer');	
