@@ -1,23 +1,31 @@
-var s = function( p ) {
+
+console.log("sketch2 loaded");
+
+s = function( p ) {
 
   var x = 100; 
   var y = 100;
 
+
   p.setup = function() {
-    p.createCanvas(700, 410);
-    console.log("whaddup");
+    canvas = null;
+    myCanvas = p.createCanvas(700,410);
+    myCanvas.parent('myContainer');
   };
 
   p.draw = function() {
-    p.background(0);
-    p.fill(115);
-    p.rect(x,y,50,p.random(5));
+    p.background('green');
+    p.fill(255);
+    p.rect(p.mouseX,y,50,p.random(50));
   };
-
-  p.mousePressed = function(){
-  	p.remove();
-  }
 
 };
 
-myp5 = new p5(s, 'myContainer');	
+if(myp5){
+  myp5.remove();
+  myp5.canvas.remove();  
+}
+
+
+
+myp5 = new p5(s);
