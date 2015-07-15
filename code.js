@@ -1,11 +1,26 @@
+
+
+/**
+ * Our actual sketch
+ * @param  {p5} p P5 reference
+ * @return {}   nothing
+ */
+ s = function( p ) {
+
+
 //----------------------------------
 // variables
 //----------------------------------
+
 /**
- * The background color of the game
- * @type {Color}
+ * Background: The background color for our sketch, can be modified
+ * @type {String}
+ * @namespace changeable variables
  */
- var backgroundColor = '#660066'; //rgb(102, 0, 102)
+ this.backgroundColor = '#660066'; //rgb(102, 0, 102)
+
+ //change this to your own playername;
+ this.playername = "subtiv";
 
 
 //----------------------------------
@@ -18,72 +33,180 @@
  * The desired framerate
  * @type {Number}
  */
- var fps = 10;
-
+ this.fps = 10;
 
 /**
  * The grid is the amount of points that makes up the game field
  * So we have 100 (x) * 100 (y) points
  * @type {Number}
  */
- var grid_size = 100;
+ this.grid_size = 100;
 
- var avatar;
- var playerhistory;
+/**
+ * The avatar, the player, you.
+ */
+ this.avatar;
 
- // temp fixes
- var mrandom;
+ /**
+  * Additional object for storying other players history-lines
+  */
+  this.playerhistory;
+
+  this.serverupdatepf = 30;
+
+  this.serverURL = 'http://biomoddlondon-sead.rhcloud.com/';
+
+  this.sensors = [];
+
+
 
 //----------------------------------
 // MAIN GAME FUNCTIONS
 //----------------------------------
-// ---- setup ----------------------
-// will be executed once | at the beginning
-function setup() {
-  // we create a full screen canvas
-  createCanvas(windowWidth, windowHeight);
+  // ---- setup ----------------------
+  // will be executed once | at the beginning
+  p.setup = function() {
+    canvas = null;
+    myCanvas = p.createCanvas(p.windowWidth, p.windowHeight);
+    myCanvas.parent('myContainer');
 
-  //set the framerate
-  frameRate(fps);
-  avatar = makeAvatar();
-  playerhistory = makePlayersHistory();
-}
+    //set the framerate
+    p.frameRate(fps);
+    avatar = Avatar();
+    playerhistory = Playerhistory();
 
-// ---- draw ----------------------
-// will be executed every frame 
-// use this for updating and drawing
-function draw() {
-  // draw stuff here
-  
+    getData();
+  };
 
-  // -- update 
-  avatar.update();
+  // ---- draw ----------------------
+  // will be executed every frame 
+  // use this for updating and drawing
+  p.draw = function() {
+    if (p.frameCount%this.serverupdatepf==0){
+      getData();
+    }
 
-  if (avatar.checkTurned()){
-    playerhistory.set("self", avatar.history);
-  }
+    // -- update 
+    avatar.update();
 
-  if (playerhistory.checkBump(avatar.position)){
-    avatar.kill();
-  }
+    if (avatar.checkTurned()){
+      playerhistory.set(this.playername, avatar.history);
+      sendHistory(); // send to server
+
+    }
+
+    if (playerhistory.checkBump(avatar.position)){
+      avatar.kill();
+    }
 
   // -- draw
-  background(backgroundColor);
+  p.background(backgroundColor);
   drawGrid();
+  drawSensors();
   playerhistory.draw();
   avatar.draw();
 
+  var txt = "";
+  p.textSize(100);
+  if(playerhistory.winner()&&avatar.alive()){
+    txt = "WINNER";
+  } else if (!avatar.alive()) {
+    txt = " † DEAD †"
+  }
+  var twidth = p.textWidth(txt);
+  p.text(txt, (p.width-twidth)/2, p.height/12);
+};
+
+
+//----------------------------------
+// SERVER FUNCTIONS
+//----------------------------------
+this.callAPI = function(path, callback, params){
+  if(!params){
+    params = {};
+  }
+  p.httpGet(this.serverURL+path, params, 'jsonp', callback);
 }
+
+function optimiseData(data){
+  delete data.responseText;
+}
+
+this.getData = function(){
+  callAPI("sensor/getSensors", function(data){
+    optimiseData(data);
+    this.sensors = data;
+  })
+}
+
+this.sendHistory = function(){
+  callAPI("game/updateHistory", function(data){
+    optimiseData(data);
+    for (var i = data.length - 1; i >= 0; i--) {
+      if (data[i].name !== this.playername){
+        this.playerhistory.set(data[i].name, data[i].data);
+      }
+    };
+  }, {n: this.playername, d: this.avatar.history});
+}
+
+
+//----------------------------------
+// SENSOR FUNCTIONS
+//----------------------------------
+this.drawSensors = function(){
+  var beginy = p.height/4;
+  var offset = p.height/20;
+  var offsetx = p.width/4;
+  var prevpoint = {};
+
+  if(p.frameCount%3==0){
+    return;
+  }
+
+  p.noFill();
+  p.stroke('yellow');
+
+  p.push();
+  for (var i = this.sensors.length - 1; i >= 0; i--) {
+    var data = this.sensors[i].averageData;
+    p.beginShape();
+    for (var d = data.length - 1; d >= 0; d--) {
+      var x = offsetx + d/data.length*(p.width - offsetx*2);
+      var y = beginy + data[d]*offset;
+      p.vertex(x, y);
+
+      //check for bump with avatar
+      var newpoint = makePoint(x,y);
+
+      if (d < data.length-1){
+        if (pointOnLine(world2grid(prevpoint), world2grid(newpoint), this.avatar.position)){
+          this.avatar.kill();
+        } 
+      }
+
+      prevpoint = newpoint;
+
+    };
+    p.endShape();
+    beginy+=p.height/4;
+  }
+  p.pop();
+}
+
+
+
 
 //----------------------------------
 // I/O FUNCTIONS
 //----------------------------------
-function keyPressed() {
-  switch (keyCode) {
-    case LEFT_ARROW:
+// gets called everytime we press the keyboard
+p.keyPressed = function() {
+  switch (p.keyCode) {
+    case p.LEFT_ARROW:
     avatar.move(true);
     break;
-    case RIGHT_ARROW:
+    case p.RIGHT_ARROW:
     avatar.move(false);
     break;
     case 'r':
@@ -93,27 +216,34 @@ function keyPressed() {
   }
 }
 
+
+
 //----------------------------------
 // WORLD FUNCTIONS
 //----------------------------------
-// draws the grid over the background
-function drawGrid(){
-  var gridColor = color(255, 204, 0, 50);
 
-  push();
-  noFill();
-  stroke(gridColor);
+  /**
+   * Drawgrid draws the grid function over the world
+   * so when our [grid_size = 100] it will draw 10.000 lines
+   * @return {}  returns nothing
+   */
+   this.drawGrid = function(){
+    var gridColor = p.color(255, 204, 0, 50);
+
+    p.push();
+    p.noFill();
+    p.stroke(gridColor);
 
   //loop: goes from x=0 -> x=grid_size
   for (var x = 0; x < grid_size; x++){
     var worldpoint = grid2world(makePoint(x,x));
     // draws the vertical lines
-    line(worldpoint.x, 0, worldpoint.x, height);
+    p.line(worldpoint.x, 0, worldpoint.x, p.height);
     // draws the horizontal lines
-    line(0, worldpoint.y, width, worldpoint.y);
+    p.line(0, worldpoint.y, p.width, worldpoint.y);
   }
 
-  pop();
+  p.pop();
 }
 
 //----------------------------------
@@ -124,33 +254,33 @@ function drawGrid(){
  *
  * @class  Avatar
  * @classdesc The player instance
- * @property {Function} test a simple test
  */
- function makeAvatar(){
+ this.Avatar =  function(){
 
   // ---- public ----------------------
   // -------- methods -----------------
-  
   /**
-   * private: initializes the avatar
+   * Initializes the avatar
+   * (private)
+   * @return {} returns nothing
    */
-   function init(){
+   var init = function(){
     reset();
-   }
+  }
 
   /**
    * resets the avatar
    */
-   function reset(){
+   var reset = function(){
 
     function makeRandomGrid(){
       var offset = grid_size/4;
-      return random(offset, grid_size-offset);
+      return p.random(offset, grid_size-offset);
     }
 
     //set members
     position = makePoint(makeRandomGrid(), makeRandomGrid());
-    orientation = floor(random(100)%8); 
+    orientation = p.floor(p.random(100)%8); 
     speed = 1;
     alive = true;
     history = [];
@@ -159,10 +289,17 @@ function drawGrid(){
     
   }
 
-  function update(){
+  /**
+   * updates the avatar location
+   * @return {} nothing
+   */
+   var update = function(){
     if (!alive){ return; }
 
-    function updateOrientation(){
+    /**
+     * Updates the location based on the orientation
+     */
+     function updateOrientation(){
       switch (orientation) {
         case 0:
         position.y-=speed;
@@ -198,30 +335,46 @@ function drawGrid(){
       }
     }
 
-    function checkBorders(){
+    /**
+     * Checks wether the avatar has hit the borders
+     */
+     var checkBorders = function(){
       if ((position.x <= 0) || (position.x >= grid_size) || (position.y <= 0) || (position.y >= grid_size)){
         updateHistory();
         alive = false;
       }
     }
 
+    // call our 2 functions to perform the update
     updateOrientation();
     checkBorders();
   }
 
-  function draw(){
+  /**
+   * draws the actual avatar
+   * @return {} returns nothing
+   */
+   var draw = function(){
     var circleSize = 10;
-    push();
-    stroke('white');
-    noFill();
-    var worldpoint = grid2world(position);
+    p.push();
+    p.stroke('white');
+    p.noFill();
+    var ppos = makePoint(Math.floor(position.x),Math.floor(position.y));
+    var worldpoint = grid2world(ppos);
     circle(worldpoint, circleSize);
-    stroke('grey');
+    p.stroke('grey');
     lineFromPoints(worldpoint, grid2world(getLastPoint()));
-    pop();
+    p.pop();
   }
 
-  function move(left){
+  /**
+   * changes the orienation of the avatar,
+   * gets called when a key is pressed
+   * @param  {Bool} left set to "true" if you want 
+   * to turn left
+   * @return {}      returns nothing
+   */
+   var move = function(left){
     left? orientation--: orientation++;
     
     if (orientation<0){
@@ -233,14 +386,20 @@ function drawGrid(){
     updateHistory();
   }
 
-  function checkTurned(){
+  /**
+   * Check if the avatar has turned,
+   * so we can update our location to the
+   * server and so on.
+   * @return {Bool} returns true if
+   * we have turned.
+   */
+   var checkTurned = function(){
     var rv = hasturned;
     hasturned = false;
     return rv;
   }
 
-  // -------- public members -----------------
-  
+  // -------- public members -----------------  
   /**
    * The grid position of the avatar
    * @type {Point}
@@ -262,13 +421,24 @@ function drawGrid(){
    var history = [];
 
   // ---- private ----------------------
-  function updateHistory(){
+  
+  /**
+   * Auxiliary function that gets called
+   * when we have turned
+   * (private)
+   * @return {} returns nothing
+   */
+   function updateHistory(){
     hasturned = true;
-
-    history.push(makePoint(position.x, position.y));
+    history.push(makePoint(Math.floor(position.x), Math.floor(position.y)));
   }
 
-  function getLastPoint(){
+  /**
+   * Gets the last point of our own history
+   * (private)
+   * @return {Point} A point object
+   */
+   function getLastPoint(){
     return history.last();
   }
 
@@ -276,27 +446,15 @@ function drawGrid(){
 
   /**
    * The orientation of the avatar which is one of 8 numbers
-  //    +--------------------------+
-  //    |             0            |
-  //    |   7        +             |
-  //    |     X      |    XX 1     |
-  //    |     XXX    |   XX        |
-  //    |       XXX  |XXXX         |
-  //    | 6  +--------------+  2   |
-  //    |          XX|XXXXX        |
-  //    |        XXX |    XX       |
-  //    |       XX   |     X       |
-  //    |       X    +        3    |
-  //    |     5      4             |
-  //    |                          |
-  //    |                          |
-  //    +--------------------------+
+   * C bottom sketch for more information
+   * (private)
    * @type {Number}
    */
    var orientation;
 
   /**
    * The progressing speed of the avatar
+   * (private)
    * @type {Number}
    */
    var speed;
@@ -314,48 +472,78 @@ function drawGrid(){
     checkTurned: checkTurned,
     position: position,
     history: history,
-    move: move
+    move: move,
+    alive: function(){return alive;}
   }
 }
+
 
 //----------------------------------
 //  PLAYERSHISTORY FUNCTIONS
 //----------------------------------
-function makePlayersHistory(){
+/**
+ * Constructs a new Playerhistory
+ *
+ * @class  Playerhistory
+ * @classdesc datastructure that maintains
+ * all of the history lines of the players
+ */
+
+ this.Playerhistory = function(){
   // ---- public ----------------------
-  function reset(){
+
+  // -------- methods -----------------
+  /**
+   * resets the object
+   */
+   var reset = function(){
     memberlines = {};
   }
 
-  // -------- methods -----------------
-  function set(name, pts){
+  /**
+   * updates a specific players history
+   * (could be highly modified) 
+   * @param {string} name the name of the player
+   * @param {Array} pts  an array of points
+   */
+   var set = function(name, pts){
     memberlines.name = pts;
   }
 
-  function draw(){
-    
+  /**
+   * draws all of the players history
+   */
+   var draw = function(){
 
     for (var member in memberlines){
-      push();
-      noFill();
-      stroke('white');
+      p.push();
+      p.noFill();
+      p.stroke('white');
 
       var currentLine = memberlines[member];
 
-      beginShape();
+      p.beginShape();
 
       for (var idx = 0, len = currentLine.length; idx < len; idx++){
         var pt = currentLine[idx];
         vertexFromPoint(grid2world(currentLine[idx]));
         circle(grid2world(currentLine[idx]), 4);
       }
-      endShape();
+      p.endShape();
 
-      pop();
+      p.pop();
     }
   }
 
-  function checkBump(pt){
+  this.winner = function(){
+    return (Object.keys(memberlines).length == 1);
+  }
+
+  /**
+   * checks wether the point bumps into any of the lines
+   * @param  {Point} pt the point we're checking
+   */
+   var checkBump = function(pt){
 
     for (var member in memberlines){
 
@@ -391,80 +579,106 @@ function makePlayersHistory(){
     reset : reset,
     set : set,
     draw: draw,
-    checkBump: checkBump
-  }
-
-  
+    checkBump: checkBump,
+    winner: winner
+  } 
 }
-
 
 //----------------------------------
 // AUX FUNCTIONS
 //----------------------------------
 //makes an object containing x and y coordinates
 /**
- * makes an Point object containing x and y coordinates
+ * makePoint : makes an Point object containing x and y coordinates
  * @param  {number} x 
  * @param  {number} y 
  * @return {Point}   
- */
- function makePoint(x, y){
+ * @namespace functions
+ *  */
+ var makePoint = function(x, y){
   (x == null)? x = 0 : x=x;
   (y == null)? y = 0 : y=y;
   return {x: x, y: y};
- }
+}
 
 /**
- * Remaps a point from the world (screensize) to the grid
+ * world2grid : Remaps a point from the world (screensize) to the grid
  * @param  {Point} pt the original point
  * @return {Point}    the remapped point
+ * @namespace functions
  */
  function world2grid(pt){
-  return makePoint(pt.x / width * grid_size, pt.y / height * grid_size);
- }
+  return makePoint(Math.floor(pt.x / p.width * grid_size), Math.floor(pt.y / p.height * grid_size));
+}
 
 /**
- * Remaps a point from the grid to the world (screensize)
+ * grid2world : Remaps a point from the grid to the world (screensize)
  * @param  {Point} pt the original point
  * @return {Point}    the remapped point
+ * @namespace functions
  */
  function grid2world(pt){
-  return makePoint(pt.x * width / grid_size, pt.y * height / grid_size);
- }
+  return makePoint(Math.floor(pt.x * p.width / grid_size), Math.floor(pt.y * p.height / grid_size));
+}
 
 /**
- * draws a line between two points
+ * lineFromPoints : draws a line between two points
  * @param  {Point} p1 
- * @param  {Point} p2 
+ * @param  {Point} p2
+ * @namespace functions
  */
  function lineFromPoints(p1, p2){
-  line(p1.x, p1.y, p2.x, p2.y);
- }
+  p.line(p1.x, p1.y, p2.x, p2.y);
+}
 
- function circle(p, radius){
-  ellipse(p.x, p.y, radius, radius);
- }
+/**
+ * circle: draws a circle using a point
+ * @param  {Point} pt     the center of the circle
+ * @param  {Number} radius the radius of the point
+ * @namespace functions
+ */
+ function circle(pt, radius){
+  p.ellipse(pt.x, pt.y, radius, radius);
+}
 
+/**
+ * vertexFromPoint: draws a vertex from a Point object
+ * @param  {Point} pt the point we're adding to the shape
+ * @namespace functions
+ */
  function vertexFromPoint(pt){
-  vertex(pt.x, pt.y);
- }
+  p.vertex(pt.x, pt.y);
+}
 
  // returns true if point lies on the line
  // http://stackoverflow.com/questions/11907947/how-to-check-if-a-point-lies-on-a-line-between-2-other-points
- function pointOnLine(p1, p2, currp){
+ /**
+  * checks wether a point lays on the line between
+  * two other points
+  * @param  {Point} p1    the first point of the line
+  * @param  {Point} p2    the second point of the line
+  * @param  {Point} currp the point we're checking
+  * @return {Bool}       returns true if the point lays on the line
+  * @namespace functions
+  */
+  function pointOnLine(p1, p2, currp){
 
-  var dxc = currp.x - p1.x;
-  var dyc = currp.y - p1.y;
+    p1 = makePoint(Math.floor(p1.x),Math.floor(p1.y));
+    p2 = makePoint(Math.floor(p2.x),Math.floor(p2.y));
+    currp = makePoint(Math.floor(currp.x),Math.floor(currp.y));
 
-  var dxl = p2.x - p1.x;
-  var dyl = p2.y - p1.y;
+    var dxc = currp.x - p1.x;
+    var dyc = currp.y - p1.y;
 
-  var cross = floor(dxc * dyl - dyc * dxl);
+    var dxl = p2.x - p1.x;
+    var dyl = p2.y - p1.y;
+
+    var cross = p.floor(dxc * dyl - dyc * dxl);
 
         // check if point lays on line (not necessarily between the two outer points)
         if (cross !== 0){ return false; }
         var rval;
-        if (abs(dxl) >= abs(dyl)){
+        if (p.abs(dxl) >= p.abs(dyl)){
           rval = (dxl > 0) ? ((p1.x <= currp.x) && (currp.x <= p2.x )) : ((p2.x <= currp.x) && (currp.x <= p1.x ));
         } else {
           rval= (dyl > 0) ? ((p1.y <= currp.y) && (currp.y <= p2.y )) : ((p2.y <= currp.y) && (currp.y <= p1.y ));
@@ -474,11 +688,46 @@ function makePlayersHistory(){
 
 
 
-    if (!Array.prototype.last){
-      Array.prototype.last = function(){
-        return this[this.length - 1];
+      if (!Array.prototype.last){
+        Array.prototype.last = function(){
+          return this[this.length - 1];
+        };
       };
+
+
+
+
     };
 
+    if(myp5){
+      myp5.remove();
+      myp5.canvas.remove();  
+    }
 
 
+
+    myp5 = new p5(s);
+
+
+
+//----------------------------------
+//  NOTES
+//----------------------------------
+//    +--------------------------+
+  //    |             0            |
+  //    |   7        +             |
+  //    |     X      |    XX 1     |
+  //    |     XXX    |   XX        |
+  //    |       XXX  |XXXX         |
+  //    | 6  +--------------+  2   |
+  //    |          XX|XXXXX        |
+  //    |        XXX |    XX       |
+  //    |       XX   |     X       |
+  //    |       X    +        3    |
+  //    |     5      4             |
+  //    |                          |
+  //    +--------------------------+
+  //    This is how our orientation works
+  //    orientation is a number representing
+  //    a direction in which the avatar is going
+  //    for example "0" means going straight up
