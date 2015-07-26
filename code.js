@@ -11,6 +11,10 @@
 //----------------------------------
 // variables
 //----------------------------------
+//
+
+//change this to your own playername;
+ this.playername = "SEAD";
 
 /**
  * Background: The background color for our sketch, can be modified
@@ -64,10 +68,6 @@ this.winnerText = " † DEAD †";
  this.sensorHeigth = 20;
 
 
- //change this to your own playername;
- this.playername = "subtiv";
-
-
 //----------------------------------
 // game variables
 //----------------------------------
@@ -111,7 +111,6 @@ this.winnerText = " † DEAD †";
   // ---- setup ----------------------
   // will be executed once | at the beginning
   p.setup = function() {
-    canvas = null;
     myCanvas = p.createCanvas(p.windowWidth, p.windowHeight);
     myCanvas.parent('myContainer');
 
