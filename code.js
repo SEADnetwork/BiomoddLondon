@@ -23,24 +23,24 @@
  */
  //----- COLORS ------------------
  this.backgroundColor = '#660066'; //rgb(102, 0, 102)
- this.sensorColor = 'yellow';
+ this.sensorColor = 'pink';
  this.gridColor = p.color(255, 200, 0, 50);
  this.avatarCircleColor = 'white';
- this.avatarRecentColor = 'grey';
+ this.avatarRecentColor = 'black';
  this.historyColor = 'white';
 
   //----- SIZES ------------------
  //the width of the sensor line
- this.sensorWidth = 1;
+ this.sensorWidth = 3;
 
  //the width of the grid line
  this.gridWidth = 1;
 
  // the radius of the avatar circle
-this.avatarCircleWidth = 10;
+this.avatarCircleWidth = 15;
 
 //the circles at the corners of the history lines
-this.historyCircleSize = 30;
+this.historyCircleSize = 35;
 
 // the width of the history lines
 this.historyLineWidth = 1;
