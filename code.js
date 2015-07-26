@@ -17,7 +17,52 @@
  * @type {String}
  * @namespace changeable variables
  */
+ //----- COLORS ------------------
  this.backgroundColor = '#660066'; //rgb(102, 0, 102)
+ this.sensorColor = 'yellow';
+ this.gridColor = p.color(255, 200, 0, 50);
+ this.avatarCircleColor = 'white';
+ this.avatarRecentColor = 'grey';
+ this.historyColor = 'white';
+
+  //----- SIZES ------------------
+ //the width of the sensor line
+ this.sensorWidth = 1;
+
+ //the width of the grid line
+ this.gridWidth = 1;
+
+ // the radius of the avatar circle
+this.avatarCircleWidth = 10;
+
+//the circles at the corners of the history lines
+this.historyCircleSize = 30;
+
+// the width of the history lines
+this.historyLineWidth = 1;
+
+
+
+
+//----- TEXT ------------------
+this.deadText = "WINNER";
+this.winnerText = " † DEAD †";
+
+//----- SENSORS ------------------
+/**
+ * Sensorlength is a variable that sets the length of the 
+ * the sensors-graph in game so: width/sensorLength;
+ * @type {Number}
+ */
+ this.sensorLength = 4;
+
+/**
+ * SensorHeigth is a variable that sets the height of the sensors-graph
+ * in game so: height/sensorHeight;
+ * @type {Number}
+ */
+ this.sensorHeigth = 20;
+
 
  //change this to your own playername;
  this.playername = "subtiv";
@@ -74,7 +119,7 @@
     p.frameRate(fps);
     avatar = Avatar();
     playerhistory = Playerhistory();
-
+    killAvatarServer();
     getData();
   };
 
@@ -109,9 +154,9 @@
   var txt = "";
   p.textSize(100);
   if(playerhistory.winner()&&avatar.alive()){
-    txt = "WINNER";
+    txt = this.deadText;
   } else if (!avatar.alive()) {
-    txt = " † DEAD †"
+    txt = this.winnerText;
   }
   var twidth = p.textWidth(txt);
   p.text(txt, (p.width-twidth)/2, p.height/12);
@@ -150,14 +195,18 @@ this.sendHistory = function(){
   }, {n: this.playername, d: this.avatar.history});
 }
 
+this.killAvatarServer = function(){
+  callAPI("game/kill", function(data){}, {n:this.playername});
+}
+
 
 //----------------------------------
 // SENSOR FUNCTIONS
 //----------------------------------
 this.drawSensors = function(){
   var beginy = p.height/4;
-  var offset = p.height/20;
-  var offsetx = p.width/4;
+  var offset = p.height/this.sensorHeigth;
+  var offsetx = p.width/this.sensorLength;
   var prevpoint = {};
 
   if(p.frameCount%3==0){
@@ -165,7 +214,8 @@ this.drawSensors = function(){
   }
 
   p.noFill();
-  p.stroke('yellow');
+  p.stroke(this.sensorColor);
+  p.strokeWeight(this.sensorWidth);
 
   p.push();
   for (var i = this.sensors.length - 1; i >= 0; i--) {
@@ -202,16 +252,16 @@ this.drawSensors = function(){
 //----------------------------------
 // gets called everytime we press the keyboard
 p.keyPressed = function() {
-  switch (p.keyCode) {
-    case p.LEFT_ARROW:
+  switch (p.key) {
+    case "W":
     avatar.move(true);
     break;
-    case p.RIGHT_ARROW:
+    case "X":
     avatar.move(false);
     break;
-    case 'r':
-    avatar.reset();
-    playerhistory.reset();
+    case "R": //'r'
+      globalReset(); 
+      killAvatarServer();
     break;
   }
 }
@@ -228,10 +278,11 @@ p.keyPressed = function() {
    * @return {}  returns nothing
    */
    this.drawGrid = function(){
-    var gridColor = p.color(255, 204, 0, 50);
+    var gridColor = this.gridColor;
 
     p.push();
     p.noFill();
+    p.strokeWeight(this.gridWidth);
     p.stroke(gridColor);
 
   //loop: goes from x=0 -> x=grid_size
@@ -355,14 +406,14 @@ p.keyPressed = function() {
    * @return {} returns nothing
    */
    var draw = function(){
-    var circleSize = 10;
+    var circleSize = avatarCircleWidth;
     p.push();
-    p.stroke('white');
+    p.stroke(avatarCircleColor);
     p.noFill();
     var ppos = makePoint(Math.floor(position.x),Math.floor(position.y));
     var worldpoint = grid2world(ppos);
     circle(worldpoint, circleSize);
-    p.stroke('grey');
+    p.stroke(avatarRecentColor);
     lineFromPoints(worldpoint, grid2world(getLastPoint()));
     p.pop();
   }
@@ -397,6 +448,11 @@ p.keyPressed = function() {
     var rv = hasturned;
     hasturned = false;
     return rv;
+  }
+
+  var kill = function(){
+    killAvatarServer();
+    alive = false;
   }
 
   // -------- public members -----------------  
@@ -468,7 +524,7 @@ p.keyPressed = function() {
     reset : reset,
     draw : draw,
     update: update,
-    kill: function(){ alive = false; },
+    kill: kill,
     checkTurned: checkTurned,
     position: position,
     history: history,
@@ -518,7 +574,8 @@ p.keyPressed = function() {
     for (var member in memberlines){
       p.push();
       p.noFill();
-      p.stroke('white');
+      p.strokeWeight(historyLineWidth);
+      p.stroke(historyColor);
 
       var currentLine = memberlines[member];
 
@@ -527,7 +584,7 @@ p.keyPressed = function() {
       for (var idx = 0, len = currentLine.length; idx < len; idx++){
         var pt = currentLine[idx];
         vertexFromPoint(grid2world(currentLine[idx]));
-        circle(grid2world(currentLine[idx]), 4);
+        circle(grid2world(currentLine[idx]), historyCircleSize);
       }
       p.endShape();
 
@@ -684,29 +741,27 @@ p.keyPressed = function() {
           rval= (dyl > 0) ? ((p1.y <= currp.y) && (currp.y <= p2.y )) : ((p2.y <= currp.y) && (currp.y <= p1.y ));
         }
         return rval;
-    }
-
-
+      }
 
       if (!Array.prototype.last){
         Array.prototype.last = function(){
           return this[this.length - 1];
         };
       };
-
-
-
-
     };
 
-    if(myp5){
-      myp5.remove();
-      myp5.canvas.remove();  
+    var globalReset = function(){
+      if(myp5){
+        myp5.remove();
+        myp5.canvas.remove();  
+      }
+
+      myp5 = new p5(s);  
     }
 
+    globalReset();
 
-
-    myp5 = new p5(s);
+    
 
 
 
