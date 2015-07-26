@@ -11,6 +11,10 @@
 //----------------------------------
 // variables
 //----------------------------------
+//
+
+//change this to your own playername;
+ this.playername = "SEAD";
 
 /**
  * Background: The background color for our sketch, can be modified
@@ -64,10 +68,6 @@ this.winnerText = " † DEAD †";
  this.sensorHeigth = 20;
 
 
- //change this to your own playername;
- this.playername = "subtiv";
-
-
 //----------------------------------
 // game variables
 //----------------------------------
@@ -111,7 +111,6 @@ this.winnerText = " † DEAD †";
   // ---- setup ----------------------
   // will be executed once | at the beginning
   p.setup = function() {
-    canvas = null;
     myCanvas = p.createCanvas(p.windowWidth, p.windowHeight);
     myCanvas.parent('myContainer');
 
@@ -252,14 +251,14 @@ this.drawSensors = function(){
 //----------------------------------
 // gets called everytime we press the keyboard
 p.keyPressed = function() {
-  switch (p.keyCode) {
-    case p.LEFT_ARROW:
+  switch (p.key) {
+    case "W":
     avatar.move(true);
     break;
-    case p.RIGHT_ARROW:
+    case "X":
     avatar.move(false);
     break;
-    case 82: //'r'
+    case "R": //'r'
       globalReset(); 
       killAvatarServer();
     break;
