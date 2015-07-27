@@ -192,7 +192,7 @@ this.login = function(){
       this.deadText = this.winnerText = "ACCOUNT ALREADY IN USE";
       avatar.kill(true);
     }
-  })
+  }, {n:this.playername});
 }
 
 this.sendHistory = function(){
