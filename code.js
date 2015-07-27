@@ -14,7 +14,7 @@
 //
 
 //change this to your own playername;
- this.playername = "SEAD";
+this.playername = "SEAD";
 
 /**
  * Background: The background color for our sketch, can be modified
@@ -37,7 +37,7 @@
  this.gridWidth = 1;
 
  // the radius of the avatar circle
-this.avatarCircleWidth = 10;
+ this.avatarCircleWidth = 10;
 
 //the circles at the corners of the history lines
 this.historyCircleSize = 30;
@@ -152,14 +152,23 @@ this.winnerText = " † DEAD †";
   playerhistory.draw();
   avatar.draw();
 
-  var txt = "";
-  p.textSize(100);
-  if(playerhistory.winner()&&avatar.alive()){
-    txt = this.deadText;
-  } else if (!avatar.alive()) {
-    txt = this.winnerText;
+  var wrongsize = true;
+  var twidth = null;
+
+  while(wrongsize){
+    var txt = "";
+    p.textSize(100);
+    if(playerhistory.winner()&&avatar.alive()){
+      txt = this.deadText;
+    } else if (!avatar.alive()) {
+      txt = this.winnerText;
+    }
+    twidth = p.textWidth(txt);
+    if (twidth < p.width*.8){
+      wrongsize = false;
+    }
   }
-  var twidth = p.textWidth(txt);
+  
   p.text(txt, (p.width-twidth)/2, p.height/12);
 };
 
@@ -271,8 +280,8 @@ p.keyPressed = function() {
     avatar.move(false);
     break;
     case "R": //'r'
-      globalReset(); 
-      killAvatarServer();
+    globalReset(); 
+    killAvatarServer();
     break;
   }
 }
