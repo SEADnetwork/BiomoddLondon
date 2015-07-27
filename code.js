@@ -212,6 +212,8 @@ this.sendHistory = function(){
     optimiseData(data);
     for (var i = data.length - 1; i >= 0; i--) {
       if (data[i].name !== this.playername){
+        console.log(data[i].data);
+        if(data[])
         this.playerhistory.set(data[i].name, data[i].data);
       }
     };
