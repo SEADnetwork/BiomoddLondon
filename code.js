@@ -154,10 +154,11 @@ this.winnerText = " † DEAD †";
 
   var wrongsize = true;
   var twidth = null;
+  var textSize = 100;
 
   while(wrongsize){
     var txt = "";
-    p.textSize(100);
+    p.textSize(textSize);
     if(playerhistory.winner()&&avatar.alive()){
       txt = this.deadText;
     } else if (!avatar.alive()) {
@@ -166,6 +167,8 @@ this.winnerText = " † DEAD †";
     twidth = p.textWidth(txt);
     if (twidth < p.width*.8){
       wrongsize = false;
+    } else {
+      textSize /= 2;
     }
   }
   
