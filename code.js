@@ -118,7 +118,9 @@ this.winnerText = " † DEAD †";
     p.frameRate(fps);
     avatar = Avatar();
     playerhistory = Playerhistory();
-    killAvatarServer();
+
+    login();
+
     getData();
   };
 
@@ -180,6 +182,16 @@ this.getData = function(){
   callAPI("sensor/getSensors", function(data){
     optimiseData(data);
     this.sensors = data;
+  })
+}
+
+this.login = function(){
+  callAPI("game/login", function(data){
+    console.log(data);
+    if(!data){
+      this.deadText = this.winnerText = "ACCOUNT ALREADY IN USE";
+      avatar.kill(true);
+    }
   })
 }
 
@@ -449,8 +461,10 @@ p.keyPressed = function() {
     return rv;
   }
 
-  var kill = function(){
-    killAvatarServer();
+  var kill = function(safeserver){
+    if (!safeserver){
+      killAvatarServer();  
+    }
     alive = false;
   }
 
@@ -759,9 +773,6 @@ p.keyPressed = function() {
     }
 
     globalReset();
-
-    
-
 
 
 //----------------------------------
